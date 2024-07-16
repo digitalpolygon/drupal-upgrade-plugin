@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\Composer\Plugin\Updater;
+namespace DigitalPolygon\Composer\Drupal\Upgrader;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\Capability\CommandProvider;
-use Drupal\Composer\Plugin\Updater\CommandProvider as UpdateDrupalCommandProvider;
+use DigitalPolygon\Composer\Drupal\Upgrader\CommandProvider as UpgradeDrupalCommandProvider;
 
 /**
  * Composer plugin for handling drupal upgrades.
@@ -28,8 +28,9 @@ class Plugin implements PluginInterface, Capable
     /**
      * {@inheritdoc}
      */
-    public function activate(Composer $composer, IOInterface $io)
+    public function activate(Composer $composer, IOInterface $io): void
     {
+        echo "world";
         $this->composer = $composer;
         $this->io = $io;
     }
@@ -57,6 +58,6 @@ class Plugin implements PluginInterface, Capable
      */
     public function getCapabilities()
     {
-        return [CommandProvider::class => UpdateDrupalCommandProvider::class];
+        return [CommandProvider::class => UpgradeDrupalCommandProvider::class];
     }
 }

@@ -2,7 +2,7 @@
   "name": "digitalpolygon/drupal-upgrade-plugin",
   "description": "A Composer plugin designed to streamline the process of updating Drupal core installations.",
   "type": "composer-plugin",
-  "keywords": ["drupal", "composer", "plugin", "core updater"],
+  "keywords": ["drupal", "composer", "plugin", "core upgrader"],
   "homepage": "https://www.drupal.org/project/drupal",
   "license": "GPL-2.0-or-later",
   "require": {
@@ -11,19 +11,19 @@
   },
   "autoload": {
     "psr-4": {
-      "Drupal\\Composer\\Plugin\\Updater\\": ""
+      "DigitalPolygon\\Composer\\Drupal\\Upgrader\\": "src/"
     }
   },
   "extra": {
-    "class": "Drupal\\Composer\\Plugin\\Updater\\Plugin",
+    "class": "DigitalPolygon\\Composer\\Drupal\\Upgrader\\Plugin",
     "branch-alias": {
-      "dev-master": "1.0.x-dev"
+      "dev-main": "1.0.x-dev"
     }
   },
   "config": {
     "sort-packages": true
   },
   "require-dev": {
-    "composer/composer": "^1.8@stable"
+    "composer/composer": "^2@stable"
   }
 }
