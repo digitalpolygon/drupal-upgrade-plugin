@@ -1,29 +1,37 @@
 {
-  "name": "digitalpolygon/drupal-upgrade-plugin",
-  "description": "A Composer plugin designed to streamline the process of updating Drupal core installations.",
-  "type": "composer-plugin",
-  "keywords": ["drupal", "composer", "plugin", "core upgrader"],
-  "homepage": "https://www.drupal.org/project/drupal",
-  "license": "GPL-2.0-or-later",
-  "require": {
-    "composer-plugin-api": "^2",
-    "php": ">=7.3.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "DigitalPolygon\\Composer\\Drupal\\Upgrader\\": "src/"
+    "name": "digitalpolygon/drupal-upgrade-plugin",
+    "description": "A Composer plugin designed to streamline the process of updating Drupal core installations.",
+    "type": "composer-plugin",
+    "keywords": [
+        "drupal",
+        "composer",
+        "plugin",
+        "core upgrader"
+    ],
+    "homepage": "https://www.drupal.org/project/drupal",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "composer-plugin-api": "^2",
+        "php": ">=7.3.0"
+    },
+    "suggest": {
+        "ion-bazan/composer-diff": "v1.9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "DigitalPolygon\\Composer\\Drupal\\Upgrader\\": "src/"
+        }
+    },
+    "extra": {
+        "class": "DigitalPolygon\\Composer\\Drupal\\Upgrader\\Plugin",
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "require-dev": {
+        "composer/composer": "^2@stable"
     }
-  },
-  "extra": {
-    "class": "DigitalPolygon\\Composer\\Drupal\\Upgrader\\Plugin",
-    "branch-alias": {
-      "dev-main": "1.0.x-dev"
-    }
-  },
-  "config": {
-    "sort-packages": true
-  },
-  "require-dev": {
-    "composer/composer": "^2@stable"
-  }
 }
