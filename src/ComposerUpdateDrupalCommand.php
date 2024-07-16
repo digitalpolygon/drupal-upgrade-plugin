@@ -1,6 +1,6 @@
 <?php
 
-namespace DigitalPolygon\Composer\Drupal\Upgrader;
+namespace DigitalPolygon\Composer\Drupal\VersionChanger;
 
 use Composer\Command\BaseCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -24,7 +24,7 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $updater = new DrupalUpgrader($this->requireComposer(), $this->getApplication(), $input, $output, $this->getIO());
+        $updater = new DrupalVersionChanger($this->requireComposer(), $this->getApplication(), $input, $output, $this->getIO());
         return $updater->execute();
     }
 }

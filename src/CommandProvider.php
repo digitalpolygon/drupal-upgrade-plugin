@@ -1,6 +1,6 @@
 <?php
 
-namespace DigitalPolygon\Composer\Drupal\Upgrader;
+namespace DigitalPolygon\Composer\Drupal\VersionChanger;
 
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 
@@ -16,7 +16,6 @@ class CommandProvider implements CommandProviderCapability
    */
     public function getCommands()
     {
-        echo "hello world";
         return [new ComposerUpdateDrupalCommand()];
     }
 }
