@@ -19,11 +19,11 @@
     },
     "autoload": {
         "psr-4": {
-            "DigitalPolygon\\Composer\\Drupal\\Upgrader\\": "src/"
+            "DigitalPolygon\\Composer\\Drupal\\VersionChanger\\": "src/"
         }
     },
     "extra": {
-        "class": "DigitalPolygon\\Composer\\Drupal\\Upgrader\\Plugin",
+        "class": "DigitalPolygon\\Composer\\Drupal\\VersionChanger\\Plugin",
         "branch-alias": {
             "dev-main": "1.0.x-dev"
         }

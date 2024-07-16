@@ -1,13 +1,13 @@
 <?php
 
-namespace DigitalPolygon\Composer\Drupal\Upgrader;
+namespace DigitalPolygon\Composer\Drupal\VersionChanger;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\Capability\CommandProvider;
-use DigitalPolygon\Composer\Drupal\Upgrader\CommandProvider as UpgradeDrupalCommandProvider;
+use DigitalPolygon\Composer\Drupal\VersionChanger\CommandProvider as UpgradeDrupalCommandProvider;
 
 /**
  * Composer plugin for handling drupal upgrades.
@@ -30,7 +30,6 @@ class Plugin implements PluginInterface, Capable
      */
     public function activate(Composer $composer, IOInterface $io): void
     {
-        echo "world";
         $this->composer = $composer;
         $this->io = $io;
     }
@@ -40,8 +39,6 @@ class Plugin implements PluginInterface, Capable
      */
     public function deactivate(Composer $composer, IOInterface $io)
     {
-        // TODO: Implement deactivate() method.
-        $x = 5;
     }
 
     /**
@@ -49,8 +46,6 @@ class Plugin implements PluginInterface, Capable
      */
     public function uninstall(Composer $composer, IOInterface $io)
     {
-        // TODO: Implement uninstall() method.
-        $x = 5;
     }
 
     /**
