@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Composer\Plugin\Updater;
+namespace DigitalPolygon\Composer\Drupal\Upgrader;
 
 use Composer\Command\BaseCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,8 +14,8 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
      */
     protected function configure(): void
     {
-        $this->setName('drupal:core:update');
-        $this->setDescription('Update Drupal core to the next available stable version.');
+        $this->setName('drupal:core:upgrade');
+        $this->setDescription('Upgrade Drupal core to the next available stable version.');
         $this->addOption('yes', null, InputOption::VALUE_NONE, 'Automatically confirm the upgrade.');
     }
 
@@ -24,7 +24,7 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $updater = new DrupalUpdater($this->requireComposer(), $this->getApplication(), $input, $output, $this->getIO());
+        $updater = new DrupalUpgrader($this->requireComposer(), $this->getApplication(), $input, $output, $this->getIO());
         return $updater->execute();
     }
 }

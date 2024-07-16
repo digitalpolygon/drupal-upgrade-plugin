@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Composer\Plugin\Updater;
+namespace DigitalPolygon\Composer\Drupal\Upgrader;
 
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 
@@ -16,6 +16,7 @@ class CommandProvider implements CommandProviderCapability
    */
     public function getCommands()
     {
+        echo "hello world";
         return [new ComposerUpdateDrupalCommand()];
     }
 }

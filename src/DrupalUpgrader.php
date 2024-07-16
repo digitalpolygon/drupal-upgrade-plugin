@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Composer\Plugin\Updater;
+namespace DigitalPolygon\Composer\Drupal\Upgrader;
 
 use Composer\Composer;
 use Composer\Console\Application;
@@ -27,7 +27,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * 6. Replaces wildcard versions in composer.json with caret versions from composer.lock.
  * 7. Updates composer.lock hashes.
  */
-final class DrupalUpdater
+final class DrupalUpgrader
 {
     /**
      * The Composer service instance.
