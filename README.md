@@ -38,7 +38,7 @@ To install the Drupal Core Composer Updater Plugin, follow these steps:
 To update your Drupal core to the latest stable version, run the following command in your project root:
 
 ```bash
-composer drupal:core:update;
+composer drupal:core:version-change 10.3.1;
 ```
 
 This command will perform the following steps:
@@ -50,10 +50,18 @@ This command will perform the following steps:
 5. **Update Process**: Updates the `composer.json` with the new version and runs composer update `--minimal-changes`.
 6. **Finalize Update**: Replaces wildcard versions with specific caret versions and updates the lock file.
 
+### Usage with Flags
+
+You can specify the update behavior using the following flags:
+
+1. `--version=<version>`: Update Drupal core to a specific version.
+2. `--latest-minor`: Update Drupal core to the latest stable minor version within the current major version.
+3. `--latest-major`: Update Drupal core to the latest stable major version.
+
 You can also use the `--yes` option to automatically confirm the upgrade without prompting:
 
 ```bash
-composer drupal:core:update --yes
+composer drupal:core:version-change 10.3.1 --yes;
 ```
 
 ## Contributing
