@@ -8,8 +8,11 @@ use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Semver\Constraint\Constraint;
+use Composer\Semver\Constraint\ConstraintInterface;
+use Composer\Semver\Constraint\MultiConstraint;
 use Composer\Semver\VersionParser;
 use Composer\Util\Filesystem;
+use Composer\Util\PackageSorter;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -24,6 +27,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  *    - A specific version (--version).
  *    - The latest available stable minor version (--latest-minor).
  *    - The latest available stable major version (--latest-major).
+ *    - The next latest available stable major version (--next-major).
  * 3. Updates the composer.json file to set the next stable version for
  *    drupal/core-recommended, drupal/core-composer-scaffold, and drupal/core-dev.
  * 4. Sets the version constraints for all other required and required-dev packages to '*'.
@@ -143,8 +147,8 @@ final class DrupalVersionChanger
         }
         $target_version = $this->getRequestedTargetVersion($current_version);
         // Validate if update is necessary.
-        if ($target_version === null) {
-            $this->io->write("Your Drupal core ($current_version) is already the requested target version.");
+        if ($target_version === null || ($current_version === $target_version)) {
+            $this->io->write("Your Drupal core ($current_version) is already the requested latest version.");
             return 0;
         }
         // Confirm upgrade with user.
@@ -171,14 +175,16 @@ final class DrupalVersionChanger
         $latest_minor = $this->input->getOption('latest-minor');
         /** @var string $latest_major */
         $latest_major = $this->input->getOption('latest-major');
+        /** @var string $next_major */
+        $next_major = $this->input->getOption('next-major');
         // It is an error if no flag or version is specified.
-        if (!$version && !$latest_minor && !$latest_major) {
-            $this->io->writeError('Error: You must specify either a version or the --latest-minor or --latest-major option.');
+        if (!$version && !$latest_minor && !$latest_major && !$next_major) {
+            $this->io->writeError('Error: You must specify either a version or the --latest-minor, --latest-major, or --next-major option.');
             return false;
         }
-        // It is an error if [version] is specified at the same time as either --latest-minor or --latest-major.
-        if ($version && ($latest_minor || $latest_major)) {
-            $this->io->writeError('Error: You cannot specify a version and the --latest-minor or --latest-major option at the same time.');
+        // It is an error if [version] is specified at the same time as either --latest-minor, --latest-major, or --next-major.
+        if ($version && ($latest_minor || $latest_major || $next_major)) {
+            $this->io->writeError('Error: You cannot specify a version and the --latest-minor, --latest-major, or --next-major option at the same time.');
             return false;
         }
         return true;
@@ -308,6 +314,12 @@ final class DrupalVersionChanger
         if ($latest_major) {
             return $this->getLatestMajorVersion($current_version);
         }
+        // Check if the user request for the next major version.
+        /** @var string $next_major */
+        $next_major = $this->input->getOption('next-major');
+        if ($next_major) {
+            return $this->getNextMajorVersion($current_version);
+        }
         return null;
     }
 
@@ -322,13 +334,17 @@ final class DrupalVersionChanger
      */
     private function getLatestMinorVersion(string $current_version): ?string
     {
-        $available_versions = $this->getAvailableVersions('drupal/core-recommended');
-        foreach ($available_versions as $version) {
-            if ($this->isStableVersion($version) && version_compare($version, $current_version, '>') && $this->isSameMajorVersion($current_version, $version)) {
-                return $version;
-            }
-        }
-        return null;
+        // Define the constraint to limit the search to minor versions within the current major version.
+        $current_major_version = $this->extractMajorVersion($current_version);
+        $next_major_version = ($current_major_version + 1);
+        $lower_bound_constraint = new Constraint('>', $current_version);
+        $upper_bound_constraint = new Constraint('<', "{$next_major_version}.0.0");
+        // Combine lower and upper bound constraints to create a range constraint.
+        $range_constraint = new MultiConstraint([$lower_bound_constraint, $upper_bound_constraint], true);
+        // Find available core packages versions that meet the range constraint.
+        $available_versions = $this->getAvailableVersions('drupal/core-recommended', $range_constraint);
+        // Since the versions are sorted, the latest version is the first one in the list.
+        return !empty($available_versions) ? current($available_versions) : null;
     }
 
     /**
@@ -343,13 +359,38 @@ final class DrupalVersionChanger
      */
     private function getLatestMajorVersion(string $current_version): ?string
     {
-        $available_versions = $this->getAvailableVersions('drupal/core-recommended');
-        foreach ($available_versions as $version) {
-            if ($this->isStableVersion($version) && version_compare($version, $current_version, '>')) {
-                return $version;
-            }
-        }
-        return null;
+        // Define the constraint to limit the search to major versions.
+        $constraint = new Constraint('>', $current_version);
+        // Find available core packages versions that meet the range constraint.
+        $available_versions = $this->getAvailableVersions('drupal/core-recommended', $constraint);
+        // Since the versions are sorted, the latest version is the first one in the list.
+        return !empty($available_versions) ? current($available_versions) : null;
+    }
+
+    /**
+     * Retrieves the next latest major stable version of Drupal core.
+     *
+     * @param string $current_version
+     *   The current version of Drupal core.
+     *
+     * @return string|null
+     *   Returns the next latest major stable version of Drupal core, or NULL if none is
+     *   found.
+     */
+    private function getNextMajorVersion(string $current_version): ?string
+    {
+        // Define the constraint to limit the search to the next major versions.
+        $current_major_version = $this->extractMajorVersion($current_version);
+        $lower_bound_major_version = ($current_major_version + 1);
+        $upper_bound_major_version = ($lower_bound_major_version + 1);
+        $lower_bound_constraint = new Constraint('>=', "{$lower_bound_major_version}.0.0");
+        $upper_bound_constraint = new Constraint('<', "{$upper_bound_major_version}.0.0");
+        // Combine lower and upper bound constraints to create a range constraint.
+        $range_constraint = new MultiConstraint([$lower_bound_constraint, $upper_bound_constraint], true);
+        // Find available core packages versions that meet the range constraint.
+        $available_versions = $this->getAvailableVersions('drupal/core-recommended', $range_constraint);
+        // Since the versions are sorted, the latest version is the first one in the list.
+        return !empty($available_versions) ? current($available_versions) : null;
     }
 
     /**
@@ -357,16 +398,25 @@ final class DrupalVersionChanger
      *
      * @param string $package_name
      *   The name of the package.
+     * @param \Composer\Semver\Constraint\ConstraintInterface $constraint
+     *   The version constraint to match against.
      *
      * @return array<string, string>
      *   Returns an array of available versions.
      */
-    private function getAvailableVersions(string $package_name): array
+    private function getAvailableVersions(string $package_name, ConstraintInterface $constraint): array
     {
         $repositoryManager = $this->composer->getRepositoryManager();
-        $packages = $repositoryManager->findPackages($package_name, '*');
+        $packages = $repositoryManager->findPackages($package_name, $constraint);
+        // Sort the packages.
+        $sorted_packages = PackageSorter::sortPackages($packages);
+        // Filter packages with stable versions only.
+        $stable_packages = array_filter($sorted_packages, function ($package) {
+            return $package->getStability() === 'stable';
+        });
+        // Extract the versions.
         $versions = [];
-        foreach ($packages as $package) {
+        foreach ($stable_packages as $package) {
             $version = $package->getPrettyVersion();
             $versions[$version] = $version;
         }
@@ -520,34 +570,25 @@ final class DrupalVersionChanger
     }
 
     /**
-     * Checks if a version string represents a stable release.
+     * Extracts the major version number from a version string.
      *
      * @param string $version
-     *   The version string to check.
+     *   The version string to extract the major version from (e.g., "8.0.0").
      *
-     * @return bool
-     *   TRUE if the version is stable, FALSE otherwise.
+     * @return int
+     *   The major version number extracted from the given version string.
      */
-    private function isStableVersion(string $version): bool
+    private function extractMajorVersion(string $version): int
     {
-        $version_parser = new VersionParser();
-        return $version_parser->parseStability($version) === 'stable';
-    }
-
-    /**
-     * Checks if two versions have the same major version number.
-     *
-     * @param string $current_version
-     *   The current version to compare.
-     * @param string $version
-     *   The version to compare against.
-     *
-     * @return bool
-     *   Returns true if the versions have the same major version number, false otherwise.
-     */
-    private function isSameMajorVersion(string $current_version, string $version): bool
-    {
-        return explode('.', $current_version)[0] === explode('.', $version)[0];
+        $versionParser = new VersionParser();
+        // Normalizes a version string to be able to perform comparisons on it.
+        $normalized_version = $versionParser->normalize($version);
+        // Get version parts.
+        $version_parts = explode('.', $normalized_version);
+        // Extract the major version.
+        $major_version = current($version_parts);
+        // Convert it into a int.
+        return intval($major_version);
     }
 
     /**

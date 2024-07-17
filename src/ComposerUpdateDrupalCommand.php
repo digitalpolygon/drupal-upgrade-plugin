@@ -22,10 +22,11 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
     {
         $this->setName('drupal:core:version-change');
         $this->setDescription('Upgrade Drupal core to the next available stable version.');
-        $this->addArgument('version', InputArgument::OPTIONAL, 'The specific version of Drupal core to update to.');
-        $this->addOption('latest-minor', null, InputOption::VALUE_NONE, 'Update to the latest stable minor version within the current major version of Drupal core.');
-        $this->addOption('latest-major', null, InputOption::VALUE_NONE, 'Update to the latest stable major version of Drupal core.');
-        $this->addOption('yes', null, InputOption::VALUE_NONE, 'Automatically confirm the upgrade without prompting for user confirmation.');
+        $this->addArgument('version', InputArgument::OPTIONAL, 'The specific version of Drupal core to update to. If not specified, other options will be considered.');
+        $this->addOption('latest-minor', null, InputOption::VALUE_NONE, 'Update to the latest stable minor version within the current major version of Drupal core. This option ensures that you stay within the current major version while applying the latest minor updates.');
+        $this->addOption('latest-major', null, InputOption::VALUE_NONE, 'Update to the latest stable major version of Drupal core. This option will upgrade your site to the latest available major version.');
+        $this->addOption('next-major', null, InputOption::VALUE_NONE, 'Update to the latest stable of the next major version of Drupal core. This option prepares your site for the next major release.');
+        $this->addOption('yes', null, InputOption::VALUE_NONE, 'Automatically confirm the upgrade without prompting for user confirmation. This is useful for scripting and automation purposes.');
     }
 
     /**
