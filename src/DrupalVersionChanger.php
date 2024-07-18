@@ -8,18 +8,26 @@ use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Semver\Constraint\Constraint;
+use Composer\Semver\Constraint\ConstraintInterface;
+use Composer\Semver\Constraint\MultiConstraint;
 use Composer\Semver\VersionParser;
 use Composer\Util\Filesystem;
+use Composer\Util\PackageSorter;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * This class updates Drupal core to the next available stable version using Composer.
+ * This class updates Drupal core to the next available stable version using
+ * Composer.
  *
  * This class performs the following operations:
- * 1. Determines the current stable version of Drupal core.
- * 2. Determines the next available stable version of Drupal core.
+ * 1. Determines the current version of Drupal core.
+ * 2. Determines the next available stable version of Drupal core based on options:
+ *    - A specific version (--version).
+ *    - The latest available stable minor version (--latest-minor).
+ *    - The latest available stable major version (--latest-major).
+ *    - The next latest available stable major version (--next-major).
  * 3. Updates the composer.json file to set the next stable version for
  *    drupal/core-recommended, drupal/core-composer-scaffold, and drupal/core-dev.
  * 4. Sets the version constraints for all other required and required-dev packages to '*'.
@@ -123,42 +131,93 @@ final class DrupalVersionChanger
      */
     public function execute(): int
     {
+        // Validate requested target version..
+        if (!$this->requestedTargetVersionIsValid()) {
+            return 1;
+        }
         // Attempt to read composer files.
         if (!$this->readComposerFiles()) {
             return 1;
         }
-        // Retrieve current and next stable versions of Drupal core.
+        // Retrieve current and next requested versions of Drupal core.
         $current_version = $this->getCurrentVersion();
         if ($current_version === null) {
             $this->io->writeError("Unable to determine the current Drupal core version. Ensure this is a valid Drupal project.");
             return 0;
         }
-        $next_stable_version = $this->getNextStableVersion($current_version);
+        $target_version = $this->getRequestedTargetVersion($current_version);
         // Validate if update is necessary.
-        if ($next_stable_version === null) {
-            $this->io->write("Your Drupal core ($current_version) is already the latest stable version available.");
+        if ($target_version === null || ($current_version === $target_version)) {
+            $this->io->write("Your Drupal core ($current_version) is already the requested latest version.");
             return 0;
         }
         // Confirm upgrade with user.
-        if (!$this->input->getOption('yes') && !$this->confirmUpgrade($current_version, $next_stable_version)) {
+        if (!$this->input->getOption('yes') && !$this->confirmUpgrade($current_version, $target_version)) {
             $this->io->write("Operation cancelled by user.");
             return 0;
         }
+        // Perform the upgrade.
+        return $this->upgradeDrupalCore($current_version, $target_version);
+    }
+
+    /**
+     * Validates if the requested target version is valid.
+     *
+     * @return bool
+     *   Returns true if the requested target version is valid, otherwise false.
+     */
+    private function requestedTargetVersionIsValid(): bool
+    {
+        // Get the user input.
+        /** @var string $version */
+        $version = $this->input->getArgument('version');
+        /** @var string $latest_minor */
+        $latest_minor = $this->input->getOption('latest-minor');
+        /** @var string $latest_major */
+        $latest_major = $this->input->getOption('latest-major');
+        /** @var string $next_major */
+        $next_major = $this->input->getOption('next-major');
+        // It is an error if no flag or version is specified.
+        if (!$version && !$latest_minor && !$latest_major && !$next_major) {
+            $this->io->writeError('Error: You must specify either a version or the --latest-minor, --latest-major, or --next-major option.');
+            return false;
+        }
+        // It is an error if [version] is specified at the same time as either --latest-minor, --latest-major, or --next-major.
+        if ($version && ($latest_minor || $latest_major || $next_major)) {
+            $this->io->writeError('Error: You cannot specify a version and the --latest-minor, --latest-major, or --next-major option at the same time.');
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Upgrades Drupal core from the current version to the specified version.
+     *
+     * @param string $current_version
+     *   The current version of Drupal core.
+     * @param string $target_version
+     *   The specified version of Drupal core to upgrade to.
+     *
+     * @return int
+     *   Returns 0 on success, 1 on failure.
+     */
+    private function upgradeDrupalCore(string $current_version, string $target_version): int
+    {
         // Backup composer files before modification.
         $this->backupComposerFiles();
-       // Try to upgrade.
+        // Try to upgrade.
         try {
             // Start Drupal core update process.
-            $this->io->write("<info>Updating Drupal core from version $current_version to version $next_stable_version.</info>");
-            // Step 1: Update composer.json with next stable versions and wildcards.
-            $this->updateComposerJsonWithWildcards($next_stable_version);
+            $this->io->write("<info>Updating Drupal core from version $current_version to version $target_version.</info>");
+            // Step 1: Update composer.json with specified version and wildcards.
+            $this->updateComposerJsonWithWildcards($target_version);
             // Step 2: Run 'composer update --minimal-changes' to update with minimal changes.
             $this->runComposerUpdate(['--minimal-changes' => true, '--no-interaction' => true]);
             // Step 3: Replace wildcard versions in composer.json with caret versions.
             $this->replaceWildcardVersionsInComposerJson();
             $this->runComposerUpdate(['--lock' => true, '--no-interaction' => true]);
             // Completion message.
-            $this->io->write("<info>Drupal core has been successfully updated from version $current_version to version $next_stable_version.</info>");
+            $this->io->write("<info>Drupal core has been successfully updated from version $current_version to version $target_version.</info>");
             return 0;
         } catch (\Exception $e) {
             // Error handling: revert changes and return error code.
@@ -227,23 +286,111 @@ final class DrupalVersionChanger
     }
 
     /**
-     * Retrieves the next stable version of Drupal core.
+     * Determines the requested target version of Drupal core.
      *
      * @param string $current_version
      *   The current version of Drupal core.
      *
      * @return string|null
-     *   Returns the next stable version of Drupal core, or NULL if none is found.
+     *   Returns the requested target version, or null if no update is needed.
      */
-    private function getNextStableVersion(string $current_version): ?string
+    private function getRequestedTargetVersion(string $current_version): ?string
     {
-        $available_versions = $this->getAvailableVersions('drupal/core-recommended');
-        foreach ($available_versions as $version) {
-            if ($this->isStableVersion($version) && version_compare($version, $current_version, '>')) {
-                return $version;
-            }
+        // Check if the user request specific target version.
+        /** @var string $version */
+        $version = $this->input->getArgument('version');
+        if ($version) {
+            return $version;
+        }
+        // Check if the user request for the latest minor version.
+        /** @var string $latest_minor */
+        $latest_minor = $this->input->getOption('latest-minor');
+        if ($latest_minor) {
+            return $this->getLatestMinorVersion($current_version);
+        }
+        // Check if the user request for the latest major version.
+        /** @var string $latest_major */
+        $latest_major = $this->input->getOption('latest-major');
+        if ($latest_major) {
+            return $this->getLatestMajorVersion($current_version);
+        }
+        // Check if the user request for the next major version.
+        /** @var string $next_major */
+        $next_major = $this->input->getOption('next-major');
+        if ($next_major) {
+            return $this->getNextMajorVersion($current_version);
         }
         return null;
+    }
+
+    /**
+     * Retrieves the latest minor stable version of Drupal core for the same major version as the current version.
+     *
+     * @param string $current_version
+     *   The current version of Drupal core.
+     *
+     * @return string|null
+     *   Returns the latest minor stable version of Drupal core, or null if none is found.
+     */
+    private function getLatestMinorVersion(string $current_version): ?string
+    {
+        // Define the constraint to limit the search to minor versions within the current major version.
+        $current_major_version = $this->extractMajorVersion($current_version);
+        $next_major_version = ($current_major_version + 1);
+        $lower_bound_constraint = new Constraint('>', $current_version);
+        $upper_bound_constraint = new Constraint('<', "{$next_major_version}.0.0");
+        // Combine lower and upper bound constraints to create a range constraint.
+        $range_constraint = new MultiConstraint([$lower_bound_constraint, $upper_bound_constraint], true);
+        // Find available core packages versions that meet the range constraint.
+        $available_versions = $this->getAvailableVersions('drupal/core-recommended', $range_constraint);
+        // Since the versions are sorted, the latest version is the first one in the list.
+        return !empty($available_versions) ? current($available_versions) : null;
+    }
+
+    /**
+     * Retrieves the latest major stable version of Drupal core.
+     *
+     * @param string $current_version
+     *   The current version of Drupal core.
+     *
+     * @return string|null
+     *   Returns the latest major stable version of Drupal core, or NULL if none is
+     *   found.
+     */
+    private function getLatestMajorVersion(string $current_version): ?string
+    {
+        // Define the constraint to limit the search to major versions.
+        $constraint = new Constraint('>', $current_version);
+        // Find available core packages versions that meet the range constraint.
+        $available_versions = $this->getAvailableVersions('drupal/core-recommended', $constraint);
+        // Since the versions are sorted, the latest version is the first one in the list.
+        return !empty($available_versions) ? current($available_versions) : null;
+    }
+
+    /**
+     * Retrieves the next latest major stable version of Drupal core.
+     *
+     * @param string $current_version
+     *   The current version of Drupal core.
+     *
+     * @return string|null
+     *   Returns the next latest major stable version of Drupal core, or NULL if none is
+     *   found.
+     */
+    private function getNextMajorVersion(string $current_version): ?string
+    {
+        // Define the constraint to limit the search to the next major versions.
+        $current_major_version = $this->extractMajorVersion($current_version);
+        $lower_bound_major_version = ($current_major_version + 1);
+        $upper_bound_major_version = ($lower_bound_major_version + 1);
+        $lower_bound_constraint = new Constraint('>=', "{$lower_bound_major_version}.0.0");
+        $upper_bound_constraint = new Constraint('<', "{$upper_bound_major_version}.0.0");
+        // Combine lower and upper bound constraints to create a range constraint.
+        $range_constraint = new MultiConstraint([$lower_bound_constraint, $upper_bound_constraint], true);
+        // Find available core packages versions that meet the range constraint.
+        $available_versions = $this->getAvailableVersions('drupal/core-recommended', $range_constraint);
+        // Since the versions are sorted, the latest version is the first one in the list.
+        return !empty($available_versions) ? current($available_versions) : null;
     }
 
     /**
@@ -251,16 +398,25 @@ final class DrupalVersionChanger
      *
      * @param string $package_name
      *   The name of the package.
+     * @param \Composer\Semver\Constraint\ConstraintInterface $constraint
+     *   The version constraint to match against.
      *
      * @return array<string, string>
      *   Returns an array of available versions.
      */
-    private function getAvailableVersions(string $package_name): array
+    private function getAvailableVersions(string $package_name, ConstraintInterface $constraint): array
     {
         $repositoryManager = $this->composer->getRepositoryManager();
-        $packages = $repositoryManager->findPackages($package_name, '*');
+        $packages = $repositoryManager->findPackages($package_name, $constraint);
+        // Sort the packages.
+        $sorted_packages = PackageSorter::sortPackages($packages);
+        // Filter packages with stable versions only.
+        $stable_packages = array_filter($sorted_packages, function ($package) {
+            return $package->getStability() === 'stable';
+        });
+        // Extract the versions.
         $versions = [];
-        foreach ($packages as $package) {
+        foreach ($stable_packages as $package) {
             $version = $package->getPrettyVersion();
             $versions[$version] = $version;
         }
@@ -280,12 +436,13 @@ final class DrupalVersionChanger
      */
     private function confirmUpgrade(string $current_version, string $next_version): bool
     {
-        $this->io->write("Your current Drupal version is \"$current_version\" and the next available version is \"$next_version\".");
+        $this->io->write("Your current Drupal Core version is \"$current_version\" and the requested next version to upgrade is \"$next_version\".");
         return $this->io->askConfirmation("Do you want to proceed with the upgrade? (yes/no)", false);
     }
 
     /**
-     * Update composer.json with wildcard versions for core packages and '*' for other packages.
+     * Update composer.json with wildcard versions for core packages and '*'
+     * for other packages.
      *
      * @param string $next_stable_version
      *   The next stable version of Drupal.
@@ -320,7 +477,8 @@ final class DrupalVersionChanger
     }
 
     /**
-     * Replaces wildcard versions in composer.json with caret versions from composer.lock.
+     * Replaces wildcard versions in composer.json with caret versions from
+     * composer.lock.
      */
     private function replaceWildcardVersionsInComposerJson(): void
     {
@@ -355,7 +513,8 @@ final class DrupalVersionChanger
      * Extracts locked versions from composer.lock file.
      *
      * @return array<string, string>
-     *   An associative array where keys are package names and values are versions.
+     *   An associative array where keys are package names and values are
+     *   versions.
      */
     private function extractLockedVersions(): array
     {
@@ -411,18 +570,25 @@ final class DrupalVersionChanger
     }
 
     /**
-     * Checks if a version string represents a stable release.
+     * Extracts the major version number from a version string.
      *
      * @param string $version
-     *   The version string to check.
+     *   The version string to extract the major version from (e.g., "8.0.0").
      *
-     * @return bool
-     *   TRUE if the version is stable, FALSE otherwise.
+     * @return int
+     *   The major version number extracted from the given version string.
      */
-    private function isStableVersion(string $version): bool
+    private function extractMajorVersion(string $version): int
     {
-        $version_parser = new VersionParser();
-        return $version_parser->parseStability($version) === 'stable';
+        $versionParser = new VersionParser();
+        // Normalizes a version string to be able to perform comparisons on it.
+        $normalized_version = $versionParser->normalize($version);
+        // Get version parts.
+        $version_parts = explode('.', $normalized_version);
+        // Extract the major version.
+        $major_version = current($version_parts);
+        // Convert it into a int.
+        return intval($major_version);
     }
 
     /**
