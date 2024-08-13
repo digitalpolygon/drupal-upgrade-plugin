@@ -453,25 +453,33 @@ final class DrupalVersionChanger
         /** @var array<string, string> $composer_json */
         $composer_json = $this->composerJson->read();
         // Define core packages to update with specific version.
-        $core_packages = ['drupal/core-recommended', 'drupal/core-composer-scaffold', 'drupal/core-dev'];
+        $core_packages = [
+          'require' => [
+            'drupal/core-recommended',
+            'drupal/core-composer-scaffold',
+          ],
+          'require-dev' => [
+            'drupal/core-dev'
+          ],
+        ];
         // Update version for core packages.
-        foreach ($core_packages as $package) {
-            $composer_json['require'][$package] = $next_stable_version;
+        foreach ($core_packages as $require_type => $packages) {
+          foreach ($packages as $package) {
+            $composer_json[$require_type][$package] = $next_stable_version;
+          }
         }
         // Set wildcard version constraint for all other required packages.
-        foreach ($composer_json['require'] as $package => $version) {
-            if (!in_array($package, $core_packages)) {
-                $composer_json['require'][$package] = '*';
+        foreach (['require', 'require-dev'] as $require_type) {
+          if (isset($composer_json[$require_type])) {
+            foreach ($composer_json[$require_type] as $package => $version) {
+              if (!in_array($package, $core_packages[$require_type])) {
+                $composer_json[$require_type][$package] = '*';
+              }
             }
+          }
         }
         // Set wildcard version constraint for all other required-dev packages.
-        if (isset($composer_json['require-dev'])) {
-            foreach ($composer_json['require-dev'] as $package => $version) {
-                if (!in_array($package, $core_packages)) {
-                    $composer_json['require-dev'][$package] = '*';
-                }
-            }
-        }
+
         // Save updated composer.json content.
         $this->composerJson->write($composer_json);
     }
@@ -488,23 +496,19 @@ final class DrupalVersionChanger
         // Extract locked versions from composer.lock.
         $locked_versions = $this->extractLockedVersions();
         // Update wildcard versions for all other required packages in composer.json.
-        foreach ($json_data['require'] as $package => $version) {
-            if ($this->hasWildcardVersion($version) && isset($locked_versions[$package])) {
-                $exact_wersion = $locked_versions[$package];
+        foreach (['require', 'require-dev'] as $require_type) {
+          // Update wildcard versions for all other required-dev packages in composer.json.
+          if (isset($json_data[$require_type])) {
+            foreach ($json_data[$require_type] as $package => $version) {
+              if ($this->hasWildcardVersion($version) && isset($locked_versions[$package])) {
+                $exact_version = $locked_versions[$package];
                 $caret_version = $this->generateCaretVersion($exact_wersion);
-                $json_data['require'][$package] = $caret_version;
+                $json_data[$require_type][$package] = $caret_version;
+              }
             }
+          }
         }
-        // Update wildcard versions for all other required-dev packages in composer.json.
-        if (isset($json_data['require-dev'])) {
-            foreach ($json_data['require-dev'] as $package => $version) {
-                if ($this->hasWildcardVersion($version) && isset($locked_versions[$package])) {
-                    $exact_wersion = $locked_versions[$package];
-                    $caret_version = $this->generateCaretVersion($exact_wersion);
-                    $json_data['require-dev'][$package] = $caret_version;
-                }
-            }
-        }
+
         // Write back the updated composer.json.
         $this->composerJson->write($json_data);
     }
@@ -523,9 +527,12 @@ final class DrupalVersionChanger
         $lock_data = $this->composerLock->read();
         $locked_versions = [];
         /** @var array<string, string> $package */
-        foreach ($lock_data['packages'] as $package) {
+        foreach (['packages', 'packages-dev'] as $package_type) {
+          foreach ($lock_data[$package_type] as $package) {
             $locked_versions[$package['name']] = $package['version'];
+          }
         }
+
         return $locked_versions;
     }
 
@@ -558,6 +565,9 @@ final class DrupalVersionChanger
      */
     private function generateCaretVersion(string $version): string
     {
+        if (substr($version, 0, 4) === 'dev-') {
+          return $version;
+        }
         $version_parser = new VersionParser();
         $normalized = $version_parser->normalize($version);
         $parts = explode('.', $normalized);
