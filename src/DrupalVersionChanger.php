@@ -565,7 +565,7 @@ final class DrupalVersionChanger
      */
     private function generateCaretVersion(string $version): string
     {
-        if (str_starts_with($version, 'dev-')) {
+        if (substr($version, 0, 4) === 'dev-') {
           return $version;
         }
         $version_parser = new VersionParser();
