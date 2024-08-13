@@ -502,7 +502,7 @@ final class DrupalVersionChanger
             foreach ($json_data[$require_type] as $package => $version) {
               if ($this->hasWildcardVersion($version) && isset($locked_versions[$package])) {
                 $exact_version = $locked_versions[$package];
-                $caret_version = $this->generateCaretVersion($exact_wersion);
+                $caret_version = $this->generateCaretVersion($exact_version);
                 $json_data[$require_type][$package] = $caret_version;
               }
             }
