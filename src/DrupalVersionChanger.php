@@ -437,7 +437,7 @@ final class DrupalVersionChanger
     private function confirmUpgrade(string $current_version, string $next_version): bool
     {
         $this->io->write("Your current Drupal Core version is \"$current_version\" and the requested next version to upgrade is \"$next_version\".");
-        return $this->io->askConfirmation("Do you want to proceed with the upgrade? (yes/no)", false);
+        return $this->io->askConfirmation("Do you want to proceed with the upgrade? (yes/no)");
     }
 
     /**
@@ -468,11 +468,16 @@ final class DrupalVersionChanger
             $composer_json[$require_type][$package] = $next_stable_version;
           }
         }
+        $whitelist = [];
+        $extra = $this->composer->getPackage()->getExtra();
+        if (isset($extra['drupal-upgrade-plugin']['whitelist'])) {
+          $whitelist = $extra['drupal-upgrade-plugin']['whitelist'];
+        }
         // Set wildcard version constraint for all other required packages.
         foreach (['require', 'require-dev'] as $require_type) {
           if (isset($composer_json[$require_type])) {
             foreach ($composer_json[$require_type] as $package => $version) {
-              if (!in_array($package, $core_packages[$require_type])) {
+              if (!in_array($package, $core_packages[$require_type]) && !in_array($package, $whitelist)) {
                 $composer_json[$require_type][$package] = '*';
               }
             }
