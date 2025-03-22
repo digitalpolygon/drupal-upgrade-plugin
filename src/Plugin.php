@@ -7,7 +7,9 @@ use Composer\IO\IOInterface;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\Capability\CommandProvider;
+use Composer\Util\Filesystem;
 use DigitalPolygon\Composer\Drupal\VersionChanger\CommandProvider as UpgradeDrupalCommandProvider;
+use League\Container\Container;
 
 /**
  * Composer plugin for handling drupal upgrades.
@@ -20,10 +22,42 @@ class Plugin implements PluginInterface, Capable
      * @var Composer
      */
     protected $composer;
+
     /**
      * @var IOInterface
      */
     protected $io;
+
+    protected static Container $container;
+
+    public static function getContainer(): Container {
+      return self::$container;
+    }
+
+    public static function configureContainer(Composer $composer, IOInterface $io) {
+      $container = new Container();
+      $container->add('filesystem', Filesystem::class);
+      $container->addShared('composer', $composer);
+      $container->addShared('io', $io);
+      $container->addShared('versionManager', VersionManager::class)
+        ->addArgument('composer')
+        ->addArgument('installedCorePackage');
+      $container->addShared(
+        'installedCorePackage',
+        $composer
+          ->getRepositoryManager()
+          ->getLocalRepository()
+          ->findPackage('drupal/core', '*')
+      );
+      $container->addShared('composerFileManager', ComposerFileManager::class)
+        ->addArgument('composer')
+        ->addArgument('filesystem')
+        ->addArgument('io')
+        ->addArgument('composerManipulator');
+      $container->addShared('composerManipulator', ComposerManipulator::class)
+        ->addArgument('composer');
+      static::$container = $container;
+    }
 
     /**
      * {@inheritdoc}
@@ -32,6 +66,7 @@ class Plugin implements PluginInterface, Capable
     {
         $this->composer = $composer;
         $this->io = $io;
+        static::configureContainer($composer, $io);
     }
 
     /**
@@ -55,4 +90,5 @@ class Plugin implements PluginInterface, Capable
     {
         return [CommandProvider::class => UpgradeDrupalCommandProvider::class];
     }
+
 }
