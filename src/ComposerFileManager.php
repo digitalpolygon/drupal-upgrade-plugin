@@ -57,8 +57,8 @@ class ComposerFileManager {
       $backupManifestPath = $backupManifestDir . '/composer.json';
       $this->filesystem->remove($backupManifestDir);
       $this->filesystem->ensureDirectoryExists($backupManifestDir);
-      $this->backupComposerLockFile = new JsonFile($backupManifestPath);
-      $this->backupComposerLockFile->write($this->manifestFile->read());
+      $this->backupManifestFile = new JsonFile($backupManifestPath);
+      $this->backupManifestFile->write($this->manifestFile->read());
 
       $this->backedUp = true;
       $this->io->write('<info>Backed up composer.json, composer.lock, and drupal_manifest/composer.json files.</info>');
