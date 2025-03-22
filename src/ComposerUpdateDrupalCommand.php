@@ -153,7 +153,7 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
         }
         $composerFileManager->updatePackageRequirementsForRootAndManifest();
         $this->getApplication()->resetComposer();
-        $result = $this->runComposerUpdate(['--lock'], $output);
+        $result = $this->runComposerUpdate(['--lock' => true], $output);
         if ($result !== 0) {
           $this->getIO()->writeError('<error>Failed to update composer.lock file.</error>');
           $composerFileManager->restoreFiles();
