@@ -1,8 +1,10 @@
 # Drupal Core Composer Updater Plugin
 
-The overall purpose of this plugin is to minimize the effort needed in
-determining how to update your Composer constraints in a way that permits an
-upgrade to the targeted version of Drupal core.
+## What problem does this plugin actually solve?
+
+It removes the "Composer dependency hell" phase of upgrading Drupal core. With
+this plugin, you can run a command that effectively says "This is the version of
+Drupal core I want to upgrade to, do whatever you need to get me there."
 
 ## Features
 
