@@ -159,29 +159,4 @@ class ComposerFileManager {
     return $versionSelector->findRecommendedRequireVersion($package);
   }
 
-  /**
-   * Generates a caret version (^) based on the given version.
-   *
-   * @param string $version
-   *   The version string.
-   *
-   * @return string
-   *   The caret version.
-   */
-//  protected function generateCaretVersion(string $version): string
-//  {
-//    if (substr($version, 0, 4) === 'dev-') {
-//      return $version;
-//    }
-//    $version_parser = new VersionParser();
-//    $normalized = $version_parser->normalize($version);
-//    $parts = explode('.', $normalized);
-//    // Ensure there are at least two parts (major and minor versions).
-//    if (count($parts) >= 2) {
-//      return '^' . $parts[0] . '.' . $parts[1];
-//    }
-//    // Default to returning the original version prefixed with '^'.
-//    return '^' . $version;
-//  }
-
 }
