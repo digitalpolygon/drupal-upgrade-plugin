@@ -90,14 +90,14 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
     }
 
     protected function runComposerPackageUpdates(OutputInterface $output): int {
+      /** @var \DigitalPolygon\Composer\Drupal\VersionChanger\ComposerManipulator $composerManipulator */
+      $composerManipulator = Plugin::getContainer()->get('composerManipulator');
+      $packages = array_merge(['project/drupal-manifest'], array_map(
+        fn($package) => $package . ':' . $this->targetDrupalCoreVersion,
+        $composerManipulator->getPresentDrupalCorePackages(),
+      ));
       $parameters = [
-        'packages' => [
-          'project/drupal-manifest',
-          'drupal/core-recommended:' . $this->targetDrupalCoreVersion,
-          'drupal/core-composer-scaffold:' . $this->targetDrupalCoreVersion,
-          'drupal/core-project-message:' . $this->targetDrupalCoreVersion,
-          'drupal/core-dev:' . $this->targetDrupalCoreVersion,
-        ],
+        'packages' => $packages,
         '-w' => true,
         '--minimal-changes' => true,
         '--prefer-lowest' => true,

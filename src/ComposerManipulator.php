@@ -19,6 +19,16 @@ class ComposerManipulator {
     ];
   }
 
+  public function getPresentDrupalCorePackages() {
+    $presentDrupalCorePackages = [];
+    foreach ($this->defaultDrupalCorePackages as $package) {
+      if ($this->composer->getRepositoryManager()->getLocalRepository()->findPackage($package, '*')) {
+        $presentDrupalCorePackages[] = $package;
+      }
+    }
+    return $presentDrupalCorePackages;
+  }
+
   /**
    * Get list of Drupal core packages present in loaded composer.
    *
