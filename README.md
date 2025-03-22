@@ -1,70 +1,120 @@
 # Drupal Core Composer Updater Plugin
 
-A Composer plugin designed to streamline the process of updating Drupal core to the latest stable version. This tool ensures your Drupal site remains secure and up-to-date with minimal hassle, leveraging Composer's capabilities to make the update process smooth and efficient.
+## What problem does this plugin actually solve?
+
+It removes the "Composer dependency hell" phase of upgrading Drupal core. With
+this plugin, you can run a command that effectively says "This is the version of
+Drupal core I want to upgrade to, do whatever you need to get me there."
 
 ## Features
 
-- **Automatic Version Detection**: Identifies your current Drupal core version and the next available stable release.
-- **Seamless Updates**: Updates core packages with minimal changes to dependencies using `composer update --minimal-changes`.
-- **User Confirmation**: Prompts for user confirmation before proceeding with the upgrade, ensuring you're always in control.
+- **Automatic Version Detection**: Easily upgrade to latest major, next major, latest minor, or specific version of Drupal core.
+- **Seamless Updates**: Updates core packages with minimal changes to all other packages.
 - **Rollback Mechanism**: Provides a safe fallback by backing up your composer files before making any changes.
-- **Dependency Management**: Handles version constraints and updates for required and required-dev packages efficiently.
 
 ## Installation
 
 To install the Drupal Core Composer Updater Plugin, follow these steps:
 
-1. **Add Plugin Repository**: Add the plugin GitHub repository to the repositories section in your project's `composer.json` file.
-
-   ```json
-   {
-       "repositories": [
-           {
-               "type": "vcs",
-               "url": "git@github.com:digitalpolygon/drupal-upgrade-plugin.git"
-           }
-       ]
-   }
-   ```
-
-1. **Require the Plugin**: Add the plugin to your project's `composer.json` file.
+1. Require the package:
 
    ```bash
    composer require digitalpolygon/drupal-upgrade-plugin;
    ```
 
+2. Create the manifest file: `<composer root>/drupal_manifest/composer.json`
+   with all of your Drupal packages (except dev, those must be kept in the root
+   composer.json).
+
+   Example:
+   ```json
+    {
+      "name": "project/drupal-manifest",
+      "type": "metapackage",
+      "require": {
+        "drupal/core-composer-scaffold": "^10.3",
+        "drupal/core-project-message": "^10.3",
+        "drupal/core-recommended": "^10.3",
+        "drupal/search_api": "^1.30",
+        "drush/drush": "^12"
+      }
+    }
+   ```
+
+3. Add the following to your `<composer root>/composer.json` repositories
+   section:
+
+   ```json
+   {
+     "type": "path",
+     "url": "./drupal_manifest"
+   }
+   ```
+
+4. Run `composer update --lock`.
+
+Going forward, add Drupal packages to the manifest file.
+
+## Managing requirements in the manifest
+
+Typically when you add new packages, you use `composer require ...` which will
+update `composer.json` in your project directory. If you are requiring packages
+that are not related to Drupal, this is fine, but if you are requiring a Drupal
+package then it is highly recommended that this goes in the manifest file. There
+are two methods for doing this:
+
+### Modify requirements from the command line
+
+```bash
+composer require drupal/foo:^1.2 --working-dir=drupal_manifest --no-update
+composer update drupal/foo
+```
+
+### Manually modify requirements
+
+Edit the `drupal_manifest/composer.json` file directly:
+
+```json
+{
+  "name": "project/drupal-manifest",
+  "type": "metapackage",
+  "require": {
+    "drupal/core-composer-scaffold": "^10.3",
+    "drupal/core-project-message": "^10.3",
+    "drupal/core-recommended": "^10.3",
+    "drupal/search_api": "^1.30",
+    "drush/drush": "^12",
+    "drupal/foo": "^1.2"
+  }
+}
+```
+
+Then run:
+
+```bash
+composer update drupal/foo
+```
+
 ## Usage
 
-To update your Drupal core to the latest stable version, run the following command in your project root:
+To update your Drupal core to a new version, run the following command in your project root:
 
 ```bash
 composer drupal:core:version-change 10.3.1;
 ```
 
-This command will perform the following steps:
-
-1. **Backup Composer Files**: Backs up your current `composer.json` and `composer.lock` files.
-2. **Determine Current Version**: Detects your current Drupal core version.
-3. **Check for Updates**: Finds the next stable Drupal core version.
-4. **User Confirmation**: Prompts you to confirm the update.
-5. **Update Process**: Updates the `composer.json` with the new version and runs composer update `--minimal-changes`.
-6. **Finalize Update**: Replaces wildcard versions with specific caret versions and updates the lock file.
+This command will attempt to update all Drupal core packages to 10.3.1 and also
+attempt to update any other package in the manifest to a version that would be
+compatible with Drupal 10.3.1 (regardless of the constraints you currently have
+specified in the manifest).
 
 ### Usage with Flags
 
 You can specify the update behavior using the following flags:
 
-1. `--version=<version>`: The specific version of Drupal core to update to. If not specified, other options will be considered.
-2. `--latest-minor`: Update to the latest stable minor version within the current major version of Drupal core. This option ensures that you stay within the current major version while applying the latest minor updates.
-3. `--latest-major`: Update to the latest stable major version of Drupal core. This option will upgrade your site to the latest available major version.
-4. `--next-major`: Update to the latest stable of the next major version of Drupal core. This option prepares your site for the next major release.
-
-You can also use the `--yes` option to automatically confirm the upgrade without prompting:
-
-```bash
-composer drupal:core:version-change 10.3.1 --yes;
-```
-This option is useful for scripting and automation purposes.
+2. `--latest-minor`: Update to the latest stable minor version within the currently installed major version of Drupal core.
+3. `--latest-major`: Update to the latest stable major version of Drupal core. This option will upgrade your site to the latest available version of Drupal.
+4. `--next-major`: Update to the latest stable of the next major version of Drupal core.
 
 ## Contributing
 
