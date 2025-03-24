@@ -35,7 +35,7 @@ class ComposerFileManager {
     $composerFilePath = Factory::getComposerFile();
     $this->composerFile = new JsonFile($composerFilePath);
     $this->composerLockFile = new JsonFile(Factory::getLockFile($composerFilePath));
-    $this->manifestFile = new JsonFile($this->configuration->getManifestFileRepositoryPath());
+    $this->manifestFile = new JsonFile($this->configuration->getManifestFileRepositoryPath() . '/composer.json');
   }
 
   public function backupFiles(): void {
