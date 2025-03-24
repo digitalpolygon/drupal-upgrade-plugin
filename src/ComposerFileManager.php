@@ -30,11 +30,12 @@ class ComposerFileManager {
     protected readonly Filesystem $filesystem,
     protected readonly IOInterface $io,
     protected readonly ComposerManipulator $composerManipulator,
+    protected readonly Configuration $configuration,
   ) {
     $composerFilePath = Factory::getComposerFile();
     $this->composerFile = new JsonFile($composerFilePath);
     $this->composerLockFile = new JsonFile(Factory::getLockFile($composerFilePath));
-    $this->manifestFile = new JsonFile('./drupal_manifest/composer.json');
+    $this->manifestFile = new JsonFile($this->configuration->getManifestFileRepositoryPath());
   }
 
   public function backupFiles(): void {
@@ -101,7 +102,7 @@ class ComposerFileManager {
   public function updatePackageRequirementsForRootAndManifest(): void {
     $composerRoot = $this->composerFile->read();
     $manifestFile = $this->manifestFile->read();
-    $drupalCorePackages = $this->composerManipulator->getPresentDrupalCoreRootPackages();
+    $drupalCorePackages = $this->configuration->getDrupalCoreVersionLinkedPackages();
     $manifestFileRequiredPackages = array_keys($manifestFile['require']);
     $currentConstrainedVersions = array_merge($composerRoot['require'], $composerRoot['require-dev'], $manifestFile['require']);
     $currentInstalledVersions = [];

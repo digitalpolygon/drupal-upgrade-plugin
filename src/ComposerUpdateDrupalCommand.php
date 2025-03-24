@@ -90,18 +90,25 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
     }
 
     protected function runComposerPackageUpdates(OutputInterface $output): int {
-      /** @var \DigitalPolygon\Composer\Drupal\VersionChanger\ComposerManipulator $composerManipulator */
-      $composerManipulator = Plugin::getContainer()->get('composerManipulator');
-      $packages = array_merge(['project/drupal-manifest'], array_map(
+      /** @var Configuration $configuration */
+      $configuration = Plugin::getContainer()->get('configuration');
+      $packages = array_merge([$configuration->getManifestPackageName()], array_map(
         fn($package) => $package . ':' . $this->targetDrupalCoreVersion,
-        $composerManipulator->getPresentDrupalCorePackages(),
+        $configuration->getDrupalCoreVersionLinkedPackages(),
       ));
       $parameters = [
         'packages' => $packages,
-        '-w' => true,
         '--minimal-changes' => true,
-        '--prefer-lowest' => true,
       ];
+      if ($configuration->includeRootDependencies()) {
+        $parameters['-W'] = true;
+      }
+      else {
+        $parameters['-w'] = true;
+      }
+      if ($configuration->preferLowest()) {
+        $parameters['--prefer-lowest'] = true;
+      }
       return $this->runComposerUpdate($parameters, $output);
     }
 
