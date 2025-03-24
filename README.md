@@ -2,9 +2,37 @@
 
 ## What problem does this plugin actually solve?
 
-It removes the "Composer dependency hell" phase of upgrading Drupal core. With
+It removes, or greatly eases, the "Composer dependency hell" phase of upgrading Drupal core. With
 this plugin, you can run a command that effectively says "This is the version of
 Drupal core I want to upgrade to, do whatever you need to get me there."
+
+## What does this plugin do?
+
+It provides commands for helping you upgrade Drupal core. It manipulates Composer and effectively wraps `composer update ...`.
+
+By default, when updating, the following flags are passed to the update command:
+
+- `--no-scripts`
+- `--no-plugins`
+- `--prefer-lowest`
+
+Scripts and plugins are disabled by default in order to avoid interference from other scripts that might otherwise cause
+the update process to fail (such as Composer patches failing to apply a patch to a new version of a package).
+
+Preferred package versions are their lowest by default. This is done to help minimize validation of other modules that
+must be updated in order to get to the targeted version of core (i.e. the lowest compatible version of a module will
+likely have fewer changes compared to higher versions, thus reducing the amount of functionality you need to verify
+with the new module version).
+
+`--ignore-platform-reqs` can also be configured to pass to the core update command, but this is disabled by default as
+to ensure platform compatibility remains (doesn't make sense to upgrade to a version of a module the requires PHP 8.3
+if your running PHP 8.2). In the future, the update command may default to ignoring platform requirements, as that 
+removes an additional barrier to updating packages purley based on semantic versioning compatibility.
+
+See the configuration section below for more details.
+
+Again, the goal is to improve the chances of successfully updating to the targeted version of core with the least amount
+of manual intervention possible, which this default configuration helps with the most.
 
 ## Features
 
@@ -110,7 +138,7 @@ specified in the manifest).
 
 ### Usage with Flags
 
-You can specify the update behavior using the following flags:
+Instead of specifying a specific version, you can specify one of the following flags to dynamically calculate the version to update to:
 
 2. `--latest-minor`: Update to the latest stable minor version within the currently installed major version of Drupal core.
 3. `--latest-major`: Update to the latest stable major version of Drupal core. This option will upgrade your site to the latest available version of Drupal.
@@ -119,7 +147,7 @@ You can specify the update behavior using the following flags:
 ## Configuration
 
 The plugin can be configured via the extra section of `composer.json` file in your project root.
-All configuration options are optional. The values specified below are the defaults.
+All configuration options are optional. The values specified below are the defaults:
 
 ```json
 {
