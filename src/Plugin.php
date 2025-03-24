@@ -53,7 +53,8 @@ class Plugin implements PluginInterface, Capable
         ->addArgument('composer')
         ->addArgument('filesystem')
         ->addArgument('io')
-        ->addArgument('composerManipulator');
+        ->addArgument('composerManipulator')
+        ->addArgument('configuration');
       $container->addShared('composerManipulator', ComposerManipulator::class)
         ->addArgument('composer')
         ->addArgument('configuration');
