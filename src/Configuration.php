@@ -11,6 +11,8 @@ class Configuration {
     protected readonly string $manifestPackageName;
     protected readonly bool $includeRootDependencies;
     protected readonly bool $preferLowest;
+    protected readonly bool $noPlugins;
+    protected readonly bool $noScripts;
 
     public function __construct(protected readonly Composer $composer) {
         $extra = $this->composer->getPackage()->getExtra();
