@@ -78,10 +78,10 @@ class UpdateRunner implements ApplicationAwareInterface, OutputAwareInterface {
             $this->io->write('<warning>Upgraded packages may be incompatible with platform requirements (i.e. PHP platform version).</warning>');
         }
         if ($this->configuration->noScripts()) {
-            $this->io->write('<warning>Scripts will not be executed during the update process.</warning>');
+            $this->io->write('<warning>Scripts will not be executed during the Drupal core update process.</warning>');
         }
         if ($this->configuration->noPlugins()) {
-            $this->io->write('<warning>Plugins will not be executed during the update process.</warning>');
+            $this->io->write('<warning>Plugins will not be executed during the Drupal core update process.</warning>');
         }
         return $parameters;
     }
