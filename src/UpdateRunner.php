@@ -70,18 +70,18 @@ class UpdateRunner implements ApplicationAwareInterface, OutputAwareInterface {
     }
 
     protected function commonParameters(): array {
-        $parameters = [];
-        if ($this->io->isInteractive()) {
-            $parameters['--no-interaction'] = true;
+        $parameters['--no-interaction'] = $this->io->isInteractive();
+        $parameters['--no-scripts'] = $this->configuration->noScripts();
+        $parameters['--no-plugins'] = $this->configuration->noPlugins();
+        $parameters['--ignore-platform-reqs'] = $this->configuration->ignorePlatformReqs();
+        if ($this->configuration->ignorePlatformReqs()) {
+            $this->io->write('<warning>Upgraded packages may be incompatible with platform requirements (i.e. PHP platform version).</warning>');
         }
         if ($this->configuration->noScripts()) {
-            $parameters['--no-scripts'] = true;
+            $this->io->write('<warning>Scripts will not be executed during the update process.</warning>');
         }
         if ($this->configuration->noPlugins()) {
-            $parameters['--no-plugins'] = true;
-        }
-        if ($this->configuration->ignorePlatformReqs()) {
-            $parameters['--ignore-platform-reqs'] = true;
+            $this->io->write('<warning>Plugins will not be executed during the update process.</warning>');
         }
         return $parameters;
     }

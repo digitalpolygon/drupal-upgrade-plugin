@@ -105,31 +105,11 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
       return 0;
     }
 
-    protected function runComposerUpdate($parameters, OutputInterface $output): int {
-      if ($this->getIO()->isInteractive() && !array_key_exists('--no-interaction', $parameters)) {
-        $parameters['--no-interaction'] = true;
-      }
-      $update_command = $this->getApplication()->find('update');
-      // Run composer update and capture the exit code.
-      $input = new ArrayInput($parameters);
-      $exit_code = $update_command->run($input, $output);
-      // Check for errors.
-      if ($exit_code !== 0) {
-        $this->getIO()->writeError("Failed to run 'composer update', Could not update dependencies.");
-        return $exit_code;
-      } else {
-        $this->getIO()->write('<info>Composer update completed successfully.</info>');
-      }
-      return 0;
-    }
-
     /**
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-      /** @var Configuration $configuration */
-      $configuration = Plugin::getContainer()->get('configuration');
       $validateResult = $this->validate($input);
       if ($validateResult !== 0) {
         $this->getIO()->writeError('<error>Failed to validate Drupal core upgrade prerequisites.</error>');
