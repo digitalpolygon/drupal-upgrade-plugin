@@ -19,22 +19,21 @@ class UpdateRunner implements ApplicationAwareInterface, OutputAwareInterface {
     ) {}
 
     public function updateCore(string $targetDrupalCoreVersion): int {
-        /** @var Configuration $configuration */
         $packages = array_merge([$this->configuration->getManifestPackageName()], array_map(
             fn($package) => $package . ':' . $targetDrupalCoreVersion,
-            $configuration->getDrupalCoreVersionLinkedPackages(),
+            $this->configuration->getDrupalCoreVersionLinkedPackages(),
         ));
         $parameters = [
             'packages' => $packages,
             '--minimal-changes' => true,
         ];
-        if ($configuration->includeRootDependencies()) {
+        if ($this->configuration->includeRootDependencies()) {
             $parameters['-W'] = true;
         }
         else {
             $parameters['-w'] = true;
         }
-        if ($configuration->preferLowest()) {
+        if ($this->configuration->preferLowest()) {
             $parameters['--prefer-lowest'] = true;
         }
         $parameters = array_merge($parameters, $this->commonParameters());
