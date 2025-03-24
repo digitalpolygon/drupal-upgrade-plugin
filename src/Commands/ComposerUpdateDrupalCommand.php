@@ -1,15 +1,13 @@
 <?php
 
-namespace DigitalPolygon\Composer\Drupal\VersionChanger;
+namespace DigitalPolygon\Composer\Drupal\VersionChanger\Commands;
 
-use Composer\Command\BaseCommand;
-use Composer\IO\ConsoleIO;
-use Composer\Semver\VersionParser;
+use DigitalPolygon\Composer\Drupal\VersionChanger\Plugin;
+use DigitalPolygon\Composer\Drupal\VersionChanger\UpdateRunner;
+use DigitalPolygon\Composer\Drupal\VersionChanger\VersionManager;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
@@ -18,10 +16,10 @@ use Symfony\Component\Console\Input\InputOption;
  *
  * @package DigitalPolygon\Composer\Drupal\VersionChanger
  */
-final class ComposerUpdateDrupalCommand extends BaseCommand
+final class ComposerUpdateDrupalCommand extends DrupalBaseCommand
 {
 
-  protected string $targetDrupalCoreVersion;
+  protected ?string $targetDrupalCoreVersion = null;
 
     /**
      * {@inheritdoc}
@@ -34,22 +32,6 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
         $this->addOption('latest-minor', null, InputOption::VALUE_NONE, 'Update to the latest stable minor version within the current major version of Drupal core. This option ensures that you stay within the current major version while applying the latest minor updates.');
         $this->addOption('latest-major', null, InputOption::VALUE_NONE, 'Update to the latest stable major version of Drupal core. This option will upgrade your site to the latest available major version.');
         $this->addOption('next-major', null, InputOption::VALUE_NONE, 'Update to the latest stable of the next major version of Drupal core. This option prepares your site for the next major release.');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function initialize(InputInterface $input, OutputInterface $output)
-    {
-        Plugin::getContainer()
-            ->inflector(ApplicationAwareInterface::class)
-            ->invokeMethod('setApplication', [$this->getApplication()]);
-        Plugin::getContainer()
-            ->inflector(OutputAwareInterface::class)
-            ->invokeMethod('setOutput', [$output]);
-        Plugin::getContainer()
-            ->inflector(InputAwareInterface::class)
-            ->invokeMethod('setInput', [$input]);
     }
 
     protected function validateInput(InputInterface $input): int {
@@ -74,22 +56,9 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
     }
 
     protected function setTargetDrupalCoreVersion(InputInterface $input) {
-      $options = $input->getOptions();
-      $arguments = $input->getArguments();
-      /** @var \DigitalPolygon\Composer\Drupal\VersionChanger\VersionManager $versionManager */
-      $versionManager = Plugin::getContainer()->get('versionManager');
-      if ($arguments['version']) {
-        $this->targetDrupalCoreVersion = $arguments['version'];
-      }
-      if ($options['latest-minor']) {
-        $this->targetDrupalCoreVersion = $versionManager->getLatestMinor();
-      }
-      if ($options['latest-major']) {
-        $this->targetDrupalCoreVersion = $versionManager->getLatestMajor();
-      }
-      if ($options['next-major']) {
-        $this->targetDrupalCoreVersion = $versionManager->getNextMajor();
-      }
+        /** @var VersionManager $versionManager */
+        $versionManager = Plugin::getContainer()->get('versionManager');
+        $this->targetDrupalCoreVersion = $versionManager->getTargetDrupalCoreVersionFromInput($input);
     }
 
     protected function validate(InputInterface $input) {

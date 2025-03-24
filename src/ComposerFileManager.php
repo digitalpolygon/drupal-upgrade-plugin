@@ -99,6 +99,11 @@ class ComposerFileManager {
     return $this->manifestFile;
   }
 
+  public function getManifestPackages(): array {
+      $require = $this->manifestFile->read()['require'] ?? [];
+      return array_keys($require);
+  }
+
   public function updatePackageRequirementsForRootAndManifest(): void {
     $composerRoot = $this->composerFile->read();
     $manifestFile = $this->manifestFile->read();

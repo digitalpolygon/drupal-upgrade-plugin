@@ -34,7 +34,8 @@ class Plugin implements PluginInterface, Capable
       return self::$container;
     }
 
-    public static function configureContainer(Composer $composer, IOInterface $io) {
+    public static function configureContainer(Composer $composer, IOInterface $io): void
+    {
       $container = new Container();
       $container->add('filesystem', Filesystem::class);
       $container->addShared('composer', $composer);

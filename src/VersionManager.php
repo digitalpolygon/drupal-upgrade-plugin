@@ -9,6 +9,8 @@ use Composer\Semver\Constraint\MultiConstraint;
 use Composer\Semver\VersionParser;
 use Composer\Util\PackageSorter;
 use Composer\Composer;
+use Symfony\Component\Console\Input\Input;
+use Symfony\Component\Console\Input\InputInterface;
 
 class VersionManager {
   public function __construct(
@@ -61,6 +63,25 @@ class VersionManager {
     $constraint = new Constraint('=', $version);
     $available_versions = $this->getAvailableCoreVersions($constraint);
     return !empty($available_versions);
+  }
+
+  public function getTargetDrupalCoreVersionFromInput(InputInterface $input): string|null {
+      $options = $input->getOptions();
+      $arguments = $input->getArguments();
+      $version = null;
+      if ($arguments['version']) {
+          $version = $arguments['version'];
+      }
+      if ($options['latest-minor']) {
+          $version = $this->getLatestMinor();
+      }
+      if ($options['latest-major']) {
+          $version = $this->getLatestMajor();
+      }
+      if ($options['next-major']) {
+          $version = $this->getNextMajor();
+      }
+      return $version;
   }
 
   protected function getAvailableCoreVersions(ConstraintInterface $constraint): array

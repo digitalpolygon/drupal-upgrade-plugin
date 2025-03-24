@@ -3,6 +3,8 @@
 namespace DigitalPolygon\Composer\Drupal\VersionChanger;
 
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
+use DigitalPolygon\Composer\Drupal\VersionChanger\Commands\ComposerUpdateDrupalCommand;
+use DigitalPolygon\Composer\Drupal\VersionChanger\Commands\DetectIssuesCommand;
 
 /**
  * List of all commands provided by this package.
@@ -16,6 +18,9 @@ class CommandProvider implements CommandProviderCapability
    */
     public function getCommands()
     {
-        return [new ComposerUpdateDrupalCommand()];
+        return [
+            new ComposerUpdateDrupalCommand(),
+            new DetectIssuesCommand(),
+        ];
     }
 }
