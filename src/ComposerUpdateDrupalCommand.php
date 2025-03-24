@@ -109,6 +109,9 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
       if ($configuration->preferLowest()) {
         $parameters['--prefer-lowest'] = true;
       }
+      if ($configuration->ignorePlatformReqs()) {
+          $parameters['--ignore-platform-reqs'] = true;
+      }
       return $this->runComposerUpdate($parameters, $output);
     }
 
@@ -135,6 +138,8 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+      /** @var Configuration $configuration */
+      $configuration = Plugin::getContainer()->get('configuration');
       $validateResult = $this->validate($input);
       if ($validateResult !== 0) {
         $this->getIO()->writeError('<error>Failed to validate Drupal core upgrade prerequisites.</error>');
@@ -160,7 +165,11 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
         }
         $composerFileManager->updatePackageRequirementsForRootAndManifest();
         $this->getApplication()->resetComposer();
-        $result = $this->runComposerUpdate(['--lock' => true], $output);
+        $parameters = ['--lock' => true];
+        if ($configuration->ignorePlatformReqs()) {
+          $parameters['--ignore-platform-reqs'] = true;
+        }
+        $result = $this->runComposerUpdate($parameters, $output);
         if ($result !== 0) {
           $this->getIO()->writeError('<error>Failed to update composer.lock file.</error>');
           $composerFileManager->restoreFiles();
