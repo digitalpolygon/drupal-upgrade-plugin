@@ -21,7 +21,7 @@ class ComposerManipulator {
    * @return void
    */
   public function convertCorePackagesToWildcards(): void {
-    $this->convertPackagesToWildcards($this->configuration->getDrupalCoreVersionLinkedPackages());
+    $this->convertPackagesToWildcards($this->getPresentDrupalCoreRootPackages());
   }
 
   /**
@@ -54,4 +54,26 @@ class ComposerManipulator {
     $this->composer->getPackage()->setDevRequires($devRequires);
     $this->composer->getPackage()->setRequires($requires);
   }
+
+    /**
+     * Get list of Drupal core packages present in loaded composer.
+     *
+     * @return array
+     */
+    public function getPresentDrupalCoreRootPackages(): array {
+        $presentDrupalCorePackages = [];
+        $devRequires = $this->composer->getPackage()->getDevRequires();
+        $requires = $this->composer->getPackage()->getRequires();
+        foreach ($devRequires as $packageName => $package) {
+            if (in_array($packageName, $this->configuration->getDrupalCoreVersionLinkedPackages())) {
+                $presentDrupalCorePackages[] = $packageName;
+            }
+        }
+        foreach ($requires as $packageName => $package) {
+            if (in_array($packageName, $this->configuration->getDrupalCoreVersionLinkedPackages())) {
+                $presentDrupalCorePackages[] = $packageName;
+            }
+        }
+        return $presentDrupalCorePackages;
+    }
 }
