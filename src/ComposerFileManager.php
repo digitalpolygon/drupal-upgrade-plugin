@@ -102,7 +102,7 @@ class ComposerFileManager {
   public function updatePackageRequirementsForRootAndManifest(): void {
     $composerRoot = $this->composerFile->read();
     $manifestFile = $this->manifestFile->read();
-    $drupalCorePackages = $this->configuration->getDrupalCoreVersionLinkedPackages();
+    $drupalCorePackages = $this->composerManipulator->getPresentDrupalCoreRootPackages();
     $manifestFileRequiredPackages = array_keys($manifestFile['require']);
     $currentConstrainedVersions = array_merge($composerRoot['require'], $composerRoot['require-dev'], $manifestFile['require']);
     $currentInstalledVersions = [];
