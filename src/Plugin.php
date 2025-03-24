@@ -62,7 +62,8 @@ class Plugin implements PluginInterface, Capable
         ->addArgument('composer');
       $container->addShared('updateRunner', UpdateRunner::class)
           ->addArgument('io')
-          ->addArgument('composer');
+          ->addArgument('composer')
+          ->addArgument('configuration');
 
       static::$container = $container;
     }
