@@ -29,6 +29,8 @@ class Configuration {
         $this->manifestFileRepositoryPath = $pluginConfiguration['manifest-file']['path'] ?? './drupal_manifest';
         $this->manifestPackageName = $pluginConfiguration['manifest-file']['name'] ?? 'project/drupal-manifest';
         $this->preferLowest = $pluginConfiguration['prefer-lowest'] ?? true;
+        $this->noScripts = $pluginConfiguration['no-scripts'] ?? true;
+        $this->noPlugins = $pluginConfiguration['no-plugins'] ?? true;
     }
 
     public function getDrupalCoreVersionLinkedPackages() {
@@ -59,5 +61,13 @@ class Configuration {
 
     public function preferLowest(): bool {
         return $this->preferLowest;
+    }
+
+    public function noScripts(): bool {
+        return $this->noScripts;
+    }
+
+    public function noPlugins(): bool {
+        return $this->noPlugins;
     }
 }

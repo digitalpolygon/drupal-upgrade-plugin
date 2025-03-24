@@ -37,18 +37,13 @@ class UpdateRunner implements ApplicationAwareInterface, OutputAwareInterface {
         if ($configuration->preferLowest()) {
             $parameters['--prefer-lowest'] = true;
         }
-        if ($configuration->ignorePlatformReqs()) {
-            $parameters['--ignore-platform-reqs'] = true;
-        }
+        $parameters = array_merge($parameters, $this->commonParameters());
         return $this->runComposerUpdate($parameters);
     }
 
     public function updateLock(): int {
         $this->getApplication()->resetComposer();
-        $parameters = ['--lock' => true];
-        if ($this->configuration->ignorePlatformReqs()) {
-            $parameters['--ignore-platform-reqs'] = true;
-        }
+        $parameters = array_merge(['--lock' => true], $this->commonParameters());
         return $this->runComposerUpdate($parameters);
     }
 
@@ -60,9 +55,6 @@ class UpdateRunner implements ApplicationAwareInterface, OutputAwareInterface {
         if (!$this->getOutput()) {
             $this->setOutput(new NullOutput());
             $this->io->writeError('<warning>Update command will run but may not output to the console.</warning>');
-        }
-        if ($this->io->isInteractive() && !array_key_exists('--no-interaction', $parameters)) {
-            $parameters['--no-interaction'] = true;
         }
         $update_command = $this->getApplication()->find('update');
         // Run composer update and capture the exit code.
@@ -76,5 +68,22 @@ class UpdateRunner implements ApplicationAwareInterface, OutputAwareInterface {
             $this->io->write('<info>Composer update completed successfully.</info>');
         }
         return 0;
+    }
+
+    protected function commonParameters(): array {
+        $parameters = [];
+        if ($this->io->isInteractive()) {
+            $parameters['--no-interaction'] = true;
+        }
+        if ($this->configuration->noScripts()) {
+            $parameters['--no-scripts'] = true;
+        }
+        if ($this->configuration->noPlugins()) {
+            $parameters['--no-plugins'] = true;
+        }
+        if ($this->configuration->ignorePlatformReqs()) {
+            $parameters['--ignore-platform-reqs'] = true;
+        }
+        return $parameters;
     }
 }

@@ -128,6 +128,8 @@ All configuration options are optional. The values specified below are the defau
             "ignore-platform-reqs": false,
             "include-root-dependencies": false,
             "prefer-lowest": true,
+            "no-scripts": true,
+            "no-plugins": true,
             "manifest-file": {
                 "path": "./drupal_manifest",
                 "name": "project/drupal-manifest"
@@ -167,6 +169,14 @@ The name of the manifest file package.
 **packages-linked-to-core-version**
 
 A list of packages that share their versioning with Drupal core.
+
+**no-scripts**
+
+Set to `true` to disable scripts during the update process.
+
+**no-plugins**
+
+Set to `true` to disable plugins during the update process.
 
 ## Contributing
 
