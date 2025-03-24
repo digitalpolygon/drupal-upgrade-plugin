@@ -116,6 +116,58 @@ You can specify the update behavior using the following flags:
 3. `--latest-major`: Update to the latest stable major version of Drupal core. This option will upgrade your site to the latest available version of Drupal.
 4. `--next-major`: Update to the latest stable of the next major version of Drupal core.
 
+## Configuration
+
+The plugin can be configured via the extra section of `composer.json` file in your project root.
+All configuration options are optional. The values specified below are the defaults.
+
+```json
+{
+    "extra": {
+        "drupal-upgrade-plugin": {
+            "ignore-platform-reqs": false,
+            "include-root-dependencies": false,
+            "prefer-lowest": true,
+            "manifest-file": {
+                "path": "./drupal_manifest",
+                "name": "project/drupal-manifest"
+            },
+            "packages-linked-to-core-version": [
+                "drupal/core-composer-scaffold",
+                "drupal/core-project-message",
+                "drupal/core-recommended",
+                "drupal/core-dev",
+                "drupal/core"
+            ]
+        },
+    }
+}
+```
+
+**ignore-platform-reqs**
+
+Set to `true` to ignore platform requirements when updating packages.
+
+**include-root-dependencies**
+
+Set to `true` to allow updates of packages in the root composer.json.
+
+**prefer-lowest**
+
+Set to `true` to prefer the lowest version of packages that satisfy the constraints.
+
+**manifest-file.path**
+
+The path to the manifest file repository.
+
+**manifest-file.name**
+
+The name of the manifest file package.
+
+**packages-linked-to-core-version**
+
+A list of packages that share their versioning with Drupal core.
+
 ## Contributing
 
 We welcome contributions to enhance the functionality and features of this plugin. Please fork the repository and submit pull requests for any improvements or bug fixes.
