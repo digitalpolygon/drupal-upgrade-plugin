@@ -30,11 +30,12 @@ class ComposerFileManager {
     protected readonly Filesystem $filesystem,
     protected readonly IOInterface $io,
     protected readonly ComposerManipulator $composerManipulator,
+    protected readonly Configuration $configuration,
   ) {
     $composerFilePath = Factory::getComposerFile();
     $this->composerFile = new JsonFile($composerFilePath);
     $this->composerLockFile = new JsonFile(Factory::getLockFile($composerFilePath));
-    $this->manifestFile = new JsonFile('./drupal_manifest/composer.json');
+    $this->manifestFile = new JsonFile($this->configuration->getManifestFileRepositoryPath() . '/composer.json');
   }
 
   public function backupFiles(): void {

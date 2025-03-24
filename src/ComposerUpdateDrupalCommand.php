@@ -36,6 +36,22 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
         $this->addOption('next-major', null, InputOption::VALUE_NONE, 'Update to the latest stable of the next major version of Drupal core. This option prepares your site for the next major release.');
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function initialize(InputInterface $input, OutputInterface $output)
+    {
+        Plugin::getContainer()
+            ->inflector(ApplicationAwareInterface::class)
+            ->invokeMethod('setApplication', [$this->getApplication()]);
+        Plugin::getContainer()
+            ->inflector(OutputAwareInterface::class)
+            ->invokeMethod('setOutput', [$output]);
+        Plugin::getContainer()
+            ->inflector(InputAwareInterface::class)
+            ->invokeMethod('setInput', [$input]);
+    }
+
     protected function validateInput(InputInterface $input): int {
       $options = $input->getOptions();
       $arguments = $input->getArguments();
@@ -89,40 +105,6 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
       return 0;
     }
 
-    protected function runComposerPackageUpdates(OutputInterface $output): int {
-      /** @var \DigitalPolygon\Composer\Drupal\VersionChanger\ComposerManipulator $composerManipulator */
-      $composerManipulator = Plugin::getContainer()->get('composerManipulator');
-      $packages = array_merge(['project/drupal-manifest'], array_map(
-        fn($package) => $package . ':' . $this->targetDrupalCoreVersion,
-        $composerManipulator->getPresentDrupalCorePackages(),
-      ));
-      $parameters = [
-        'packages' => $packages,
-        '-w' => true,
-        '--minimal-changes' => true,
-        '--prefer-lowest' => true,
-      ];
-      return $this->runComposerUpdate($parameters, $output);
-    }
-
-    protected function runComposerUpdate($parameters, OutputInterface $output): int {
-      if ($this->getIO()->isInteractive() && !array_key_exists('--no-interaction', $parameters)) {
-        $parameters['--no-interaction'] = true;
-      }
-      $update_command = $this->getApplication()->find('update');
-      // Run composer update and capture the exit code.
-      $input = new ArrayInput($parameters);
-      $exit_code = $update_command->run($input, $output);
-      // Check for errors.
-      if ($exit_code !== 0) {
-        $this->getIO()->writeError("Failed to run 'composer update', Could not update dependencies.");
-        return $exit_code;
-      } else {
-        $this->getIO()->write('<info>Composer update completed successfully.</info>');
-      }
-      return 0;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -134,6 +116,8 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
         return $validateResult;
       }
       $container = Plugin::getContainer();
+      /** @var UpdateRunner $updateRunner */
+      $updateRunner = $container->get('updateRunner');
       /** @var \Composer\Composer $composer */
       $composer = $container->get('composer');
       /** @var \DigitalPolygon\Composer\Drupal\VersionChanger\ComposerFileManager $composerFileManager */
@@ -145,15 +129,14 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
         $manifestWildcardRepo = $composerFileManager->getWildcardManifestRepository();
         $composer->getRepositoryManager()->prependRepository($manifestWildcardRepo);
         $composerManipulator->convertCorePackagesToWildcards();
-        $result = $this->runComposerPackageUpdates($output);
+        $result = $updateRunner->updateCore($this->targetDrupalCoreVersion);
         if ($result !== 0) {
           $this->getIO()->writeError('<error>Failed to update Drupal core and manifest packages.</error>');
           $composerFileManager->restoreFiles();
           return $result;
         }
         $composerFileManager->updatePackageRequirementsForRootAndManifest();
-        $this->getApplication()->resetComposer();
-        $result = $this->runComposerUpdate(['--lock' => true], $output);
+        $result = $updateRunner->updateLock();
         if ($result !== 0) {
           $this->getIO()->writeError('<error>Failed to update composer.lock file.</error>');
           $composerFileManager->restoreFiles();
