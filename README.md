@@ -52,12 +52,13 @@ To install the Drupal Core Composer Updater Plugin, follow these steps:
 
 2. Create the manifest file: `<composer root>/drupal_manifest/composer.json`
    with all of your Drupal packages (except dev, those must be kept in the root
-   composer.json).
+   composer.json). You can change 'project/' to your project name and alter version as your project grows.
 
    Example:
    ```json
     {
       "name": "project/drupal-manifest",
+      "version": "1.0.0",
       "type": "metapackage",
       "require": {
         "drupal/core-composer-scaffold": "^10.3",
@@ -79,7 +80,13 @@ To install the Drupal Core Composer Updater Plugin, follow these steps:
    }
    ```
 
-4. Run `composer update --lock`.
+4. Require the project pacakge you just created:
+
+   ```bash
+   composer require project/drupal-manifest:1.0.0
+   ```
+   
+6. Run `composer update --lock`.
 
 Going forward, add Drupal packages to the manifest file.
 
