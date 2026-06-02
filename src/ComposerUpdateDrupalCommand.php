@@ -39,7 +39,7 @@ final class ComposerUpdateDrupalCommand extends BaseCommand
     /**
      * {@inheritdoc}
      */
-    public function initialize(InputInterface $input, OutputInterface $output)
+    public function initialize(InputInterface $input, OutputInterface $output): void
     {
         Plugin::getContainer()
             ->inflector(ApplicationAwareInterface::class)
